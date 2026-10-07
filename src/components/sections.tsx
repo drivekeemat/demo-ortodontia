@@ -108,7 +108,7 @@ export function Differentials() {
 }
 
 export function Clinic() {
-  const [a, b, c] = images.gallery;
+  const [a, b, c] = images.gallery as [(typeof images.gallery)[number], (typeof images.gallery)[number], (typeof images.gallery)[number]];
   return (
     <section id="clinica" className="py-24 sm:py-32">
       <div className={container}>
