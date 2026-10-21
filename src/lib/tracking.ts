@@ -1,52 +1,67 @@
-import { site } from "@/config/site";
+import { site } from "@/config/clinic";
 
-/** Eventos preparados para GA4 / GTM / Meta Pixel futuramente. */
-export type TrackEvent =
-  | "page_view"
-  | "click_whatsapp"
-  | "click_phone"
-  | "click_instagram"
-  | "view_treatment"
-  | "click_directions"
-  | "form_submit";
+/** Eventos de conversão. Nenhum script externo é instalado; ver `track`. */
+export type TrackEvent = "click_whatsapp" | "click_phone" | "click_instagram" | "click_directions" | "click_treatment";
+export type TrackContext = { event_location?: string; treatment?: string };
 
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "gclid", "fbclid"];
-const STORAGE_KEY = "attribution";
+const ATTRIBUTION_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "gclid", "fbclid"] as const;
 
-/** Captura UTMs/gclid/fbclid da URL e guarda na sessão. */
-export function captureAttribution() {
-  if (typeof window === "undefined") return;
-  const params = new URLSearchParams(window.location.search);
-  const found: Record<string, string> = {};
-  UTM_KEYS.forEach((k) => {
+/** Lê UTMs / gclid / fbclid da URL atual, em memória. Não persiste nem envia nada. */
+export function getUtmParams(search = typeof window === "undefined" ? "" : window.location.search) {
+  const params = new URLSearchParams(search);
+  const out: Partial<Record<(typeof ATTRIBUTION_KEYS)[number], string>> = {};
+  for (const k of ATTRIBUTION_KEYS) {
     const v = params.get(k);
-    if (v) found[k] = v;
-  });
-  if (Object.keys(found).length) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(found));
-}
-
-export function getAttribution(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
-  } catch {
-    return {};
+    if (v) out[k] = v;
   }
+  return out;
 }
 
-/** Ponto único de disparo de eventos. Conecte GTM/GA4/Pixel aqui. */
-export function track(event: TrackEvent, data: Record<string, unknown> = {}) {
+/**
+ * Ponto único de disparo. Hoje só empurra para window.dataLayer SE ele já existir
+ * (ou seja, quando um GTM/GA4 for instalado com consentimento no futuro).
+ */
+export function track(event: TrackEvent, ctx: TrackContext = {}) {
   if (typeof window === "undefined") return;
   const w = window as unknown as { dataLayer?: unknown[] };
-  w.dataLayer = w.dataLayer || [];
-  w.dataLayer.push({ event, ...data, ...getAttribution() });
+  if (!Array.isArray(w.dataLayer)) return;
+  w.dataLayer.push({ event, event_name: event, ...ctx });
 }
 
-export function whatsappUrl(message = site.whatsappMessage) {
-  const number = site.whatsapp.replace(/\D/g, "");
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+/** Mensagens predefinidas por contexto. */
+export function buildWhatsAppMessage(ctx: { topic?: string } = {}) {
+  return ctx.topic
+    ? `Olá! Conheci a clínica pelo site e gostaria de informações sobre ${ctx.topic}.`
+    : `Olá! Conheci a ${site.name} pelo site e gostaria de conversar com a equipe.`;
 }
 
-export function directionsUrl() {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${site.address}, ${site.mapsQuery}`)}`;
+const digits = (s: string) => s.replace(/\D/g, "");
+
+/** `null` quando o número não está configurado — nunca gera link inválido. */
+export function whatsappUrl(message = buildWhatsAppMessage(), number = site.whatsapp) {
+  const n = digits(number);
+  if (n.length < 10) return null;
+  return `https://wa.me/${n}?text=${encodeURIComponent(message)}`;
+}
+
+export function phoneUrl(phone = site.phone) {
+  const n = digits(phone);
+  return n.length >= 8 ? `tel:+${n.startsWith("55") ? n : `55${n}`}` : null;
+}
+
+export function instagramUrl(user = site.instagram) {
+  const u = user.replace(/^@/, "").trim();
+  return u ? `https://instagram.com/${u}` : null;
+}
+
+export function directionsUrl(address = site.address, mapsUrl = site.mapsUrl) {
+  if (mapsUrl) return mapsUrl;
+  if (!address.trim()) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, ${site.city} - ${site.state}`)}`;
+}
+
+/** Aviso discreto quando um contato ainda não foi configurado (modo demonstração). */
+export function showDemoNotice(text: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("demo-notice", { detail: text }));
 }

@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu, X, MessageCircle, Phone, Instagram, MapPin, Clock } from "lucide-react";
-import { nav, site } from "@/config/site";
-import { Logo, WhatsAppButton } from "@/components/ui-kit";
-import { track, whatsappUrl, captureAttribution } from "@/lib/tracking";
+import { nav, site } from "@/config/clinic";
+import { ContactLink, DemoNotice, Logo, WhatsAppButton } from "@/components/ui-kit";
+import { instagramUrl, phoneUrl, whatsappUrl } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
+
+const WA_DEMO = "Demonstração: o WhatsApp da clínica ainda não foi configurado.";
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    captureAttribution();
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -32,7 +33,7 @@ export function Header() {
           <Logo />
         </a>
         <nav aria-label="Principal" className="hidden lg:block">
-          <ul className="flex gap-8 text-sm text-foreground/80">
+          <ul className="flex gap-8 text-[15px] text-foreground/85">
             {nav.map((n) => (
               <li key={n.href}>
                 <a href={`/${n.href}`} className="transition-colors hover:text-primary">{n.label}</a>
@@ -42,16 +43,6 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <WhatsAppButton location="header" className="hidden min-h-11 sm:inline-flex" />
-          <a
-            href={whatsappUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Falar pelo WhatsApp"
-            onClick={() => track("click_whatsapp", { location: "header_mobile" })}
-            className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground sm:hidden"
-          >
-            <MessageCircle className="size-5" />
-          </a>
           <button
             type="button"
             className="grid size-11 place-items-center rounded-full lg:hidden"
@@ -83,49 +74,66 @@ export function Header() {
 
 export function FloatingWhatsApp() {
   return (
-    <a
-      href={whatsappUrl()}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Falar pelo WhatsApp"
-      data-track="click_whatsapp"
-      onClick={() => track("click_whatsapp", { location: "floating" })}
-      className="fixed bottom-5 right-5 z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_24px_-8px_var(--primary)] transition-transform hover:scale-105 sm:bottom-8 sm:right-8"
-    >
-      <MessageCircle className="size-6" />
-    </a>
+    <>
+      <ContactLink
+        href={whatsappUrl()}
+        event="click_whatsapp"
+        context={{ event_location: "floating" }}
+        demoText={WA_DEMO}
+        aria-label="Conversar pelo WhatsApp"
+        className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_28px_-8px_var(--primary)] ring-4 ring-background/70 transition-transform hover:scale-105 sm:bottom-8 sm:right-8"
+      >
+        <MessageCircle className="size-6" aria-hidden />
+      </ContactLink>
+      <DemoNotice />
+    </>
   );
 }
 
 export function Footer() {
   const year = new Date().getFullYear();
+  const link = "hover:text-ink-foreground";
   return (
-    <footer className="bg-ink pb-24 pt-16 text-ink-foreground sm:pb-12">
+    <footer className="bg-ink pb-28 pt-16 text-ink-foreground sm:pb-12">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Logo light />
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-ink-foreground/70">{site.tagline}</p>
-          <p className="mt-6 text-xs text-ink-foreground/60">
-            Responsável técnico: {site.technicalLead} · CRO {site.cro}
-          </p>
+          <p className="mt-5 max-w-sm text-base leading-relaxed text-ink-foreground/75">{site.tagline}</p>
+          {(site.technicalLead || site.cro) && (
+            <p className="mt-6 text-sm text-ink-foreground/70">
+              Responsável técnico: {site.technicalLead}{site.cro && ` · CRO ${site.cro}`}
+            </p>
+          )}
         </div>
-        <ul className="space-y-3 text-sm text-ink-foreground/80">
-          <li className="flex gap-3"><Phone className="size-4 shrink-0 mt-0.5" /><a href={site.phoneHref} onClick={() => track("click_phone", { location: "footer" })} className="hover:text-ink-foreground">{site.phone}</a></li>
-          <li className="flex gap-3"><MessageCircle className="size-4 shrink-0 mt-0.5" /><a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", { location: "footer" })} className="hover:text-ink-foreground">WhatsApp {site.whatsapp}</a></li>
-          <li className="flex gap-3"><Instagram className="size-4 shrink-0 mt-0.5" /><a href={site.instagram} target="_blank" rel="noopener noreferrer" onClick={() => track("click_instagram", { location: "footer" })} className="hover:text-ink-foreground">{site.instagramHandle}</a></li>
-          <li className="flex gap-3"><MapPin className="size-4 shrink-0 mt-0.5" /><span>{site.address}<br />{site.city} – {site.state}</span></li>
+        <ul className="space-y-3 text-[15px] text-ink-foreground/85">
+          {site.phone && (
+            <li className="flex gap-3"><Phone className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <ContactLink href={phoneUrl()} external={false} event="click_phone" context={{ event_location: "footer" }} demoText="Demonstração: telefone não configurado." className={link}>{site.phone}</ContactLink>
+            </li>
+          )}
+          <li className="flex gap-3"><MessageCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <ContactLink href={whatsappUrl()} event="click_whatsapp" context={{ event_location: "footer" }} demoText={WA_DEMO} className={link}>WhatsApp</ContactLink>
+          </li>
+          {site.instagram && (
+            <li className="flex gap-3"><Instagram className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <ContactLink href={instagramUrl()} event="click_instagram" context={{ event_location: "footer" }} demoText="Demonstração: Instagram não configurado." className={link}>@{site.instagram.replace(/^@/, "")}</ContactLink>
+            </li>
+          )}
+          <li className="flex gap-3"><MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /><span>{site.address && <>{site.address}<br /></>}{site.city} – {site.state}</span></li>
         </ul>
-        <ul className="space-y-3 text-sm text-ink-foreground/80">
-          {site.hours.map((h) => (
-            <li key={h.days} className="flex gap-3"><Clock className="size-4 shrink-0 mt-0.5" />{h.days}: {h.time}</li>
-          ))}
-        </ul>
+        {site.hours.length > 0 && (
+          <ul className="space-y-3 text-[15px] text-ink-foreground/85">
+            {site.hours.map((h) => (
+              <li key={h.days} className="flex gap-3"><Clock className="mt-0.5 size-4 shrink-0" aria-hidden />{h.days}: {h.time}</li>
+            ))}
+          </ul>
+        )}
       </div>
-      <div className="mx-auto mt-14 flex max-w-7xl flex-col gap-4 border-t border-ink-foreground/15 px-5 pt-6 text-xs text-ink-foreground/60 sm:flex-row sm:justify-between sm:px-8">
+      <div className="mx-auto mt-14 flex max-w-7xl flex-col gap-4 border-t border-ink-foreground/15 px-5 pt-6 text-sm text-ink-foreground/70 sm:flex-row sm:justify-between sm:px-8">
         <p>© {year} {site.name}. Todos os direitos reservados.</p>
         <div className="flex gap-6">
-          <Link to="/privacidade" className="hover:text-ink-foreground">Política de Privacidade</Link>
-          <Link to="/termos" className="hover:text-ink-foreground">Termos de Uso</Link>
+          <Link to="/privacidade" className={link}>Política de Privacidade</Link>
+          <Link to="/termos" className={link}>Termos de Uso</Link>
         </div>
       </div>
     </footer>
