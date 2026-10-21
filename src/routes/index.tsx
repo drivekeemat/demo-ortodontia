@@ -3,8 +3,8 @@ import { site } from "@/config/site";
 import { Header, Footer, FloatingWhatsApp } from "@/components/site-chrome";
 import { Hero, Trust, Treatments, Differentials, Clinic, About, Team, Reviews, Faq, Location, FinalCta } from "@/components/sections";
 
-const title = `${site.name} | Dentista em ${site.city}`;
-const description = `Conheça a ${site.name} em ${site.city}. Atendimento odontológico personalizado, estrutura moderna e diferentes tratamentos.`;
+const title = site.seo.title;
+const description = site.seo.description;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,7 +25,14 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "Dentist",
           name: site.name,
-          address: { "@type": "PostalAddress", addressLocality: site.city, addressRegion: site.state, addressCountry: "BR" },
+          address: {
+            "@type": "PostalAddress",
+            ...(site.address ? { streetAddress: site.address } : {}),
+            addressLocality: site.city,
+            addressRegion: site.state,
+            addressCountry: "BR",
+          },
+          ...(site.phone ? { telephone: site.phone } : {}),
         }),
       },
     ],
