@@ -40,7 +40,7 @@ export function ContactLink({
 }: {
   href: string | null;
   event: TrackEvent;
-  context?: TrackContext;
+  context?: TrackContext | undefined;
   demoText: string;
   external?: boolean;
   className?: string;
