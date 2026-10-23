@@ -2,7 +2,7 @@ import { site } from "@/config/clinic";
 
 /** Eventos de conversão. Nenhum script externo é instalado; ver `track`. */
 export type TrackEvent = "click_whatsapp" | "click_phone" | "click_instagram" | "click_directions" | "click_treatment";
-export type TrackContext = { event_location?: string; treatment?: string };
+export type TrackContext = { event_location?: string | undefined; treatment?: string | undefined };
 
 const ATTRIBUTION_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "gclid", "fbclid"] as const;
 
@@ -29,7 +29,7 @@ export function track(event: TrackEvent, ctx: TrackContext = {}) {
 }
 
 /** Mensagens predefinidas por contexto. */
-export function buildWhatsAppMessage(ctx: { topic?: string } = {}) {
+export function buildWhatsAppMessage(ctx: { topic?: string | undefined } = {}) {
   return ctx.topic
     ? `Olá! Conheci a clínica pelo site e gostaria de informações sobre ${ctx.topic}.`
     : `Olá! Conheci a ${site.name} pelo site e gostaria de conversar com a equipe.`;

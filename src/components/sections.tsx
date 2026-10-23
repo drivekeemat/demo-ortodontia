@@ -142,7 +142,7 @@ export function About() {
   );
 }
 
-function Portrait({ photo, name }: { photo?: string; name?: string }) {
+function Portrait({ photo, name }: { photo?: string | undefined; name?: string | undefined }) {
   if (photo) return <img src={photo} alt={name ? `Retrato de ${name}` : ""} loading="lazy" decoding="async" className="aspect-[4/5] w-full rounded-2xl object-cover" />;
   return (
     <div className="relative grid aspect-[4/5] w-full place-items-center overflow-hidden rounded-2xl bg-sage-soft" aria-hidden>
